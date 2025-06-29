@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Price Comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #7D5A50, #E3C9B8);
+      color: #3E2723;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #FAE5D3;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(50, 34, 28, 0.3);
+    }
+    h1 {
+      color: #5D4037;
+      font-weight: 700;
+    }
+    select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    select {
+      background: #D7B9A7;
+      color: #3E2723;
+      border: 2px solid #5D4037;
+    }
+    button {
+      background: #6D4C41;
+      color: #FAE5D3;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 10px;
+    }
+    button:hover {
+      background: #A1887F;
+    }
+    .table-container {
+      margin-top: 20px;
+      display: none;
+    }
+    table {
+      width: 100%;
+      background: #F2D4BC;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #6D4C41;
+    }
+    th {
+      background: #6D4C41;
+      color: #FAE5D3;
+    }
+    tr:nth-child(even) {
+      background: #E3C9B8;
+    }
+    .best-deal {
+      margin-top: 20px;
+      padding: 15px;
+      background: #388E3C;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      display: none;
+    }
+    .wishlist-btn {
+      background: #FF9800;
+      color: white;
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    .wishlist-btn:hover {
+      background: #F57C00;
+    }
+
+    /* Share Buttons Styling */
+    .share-buttons {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      flex-wrap: nowrap;
+      flex-direction: row;
+    }
+
+    .share-buttons a,
+    .share-buttons button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90px;
+    }
+
+    .share-buttons img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+
+    .share-buttons p {
+      margin-top: 5px;
+      font-size: 14px;
+      color: #6D4C41;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Price Comparison</h1>
+    <h2 id="categoryHeader"></h2>
+
+    <select id="productDropdown">
+      <option value="">Choose a product...</option>
+    </select>
+    <button onclick="comparePrice()">Compare Price</button>
+
+    <div class="table-container" id="priceTable">
+      <h2>Price Details</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Price</th>
+            <th>Buy Now</th>
+          </tr>
+        </thead>
+        <tbody id="priceDetails"></tbody>
+      </table>
+      <div id="bestDeal" class="best-deal"></div>
+      <button id="addToWishlistBtn" class="wishlist-btn" onclick="addToWishlist()">Add to Wishlist</button>
+
+      <h3 style="text-align: center; margin-top: 20px; color: #5D4037;">Share to</h3>
+      <div class="share-buttons">
+        <a id="whatsappShare" target="_blank">
+          <img src="https://cdn-icons-png.flaticon.com/512/220/220236.png">
+          <p>WhatsApp</p>
+        </a>
+        <a href="https://www.instagram.com" target="_blank" id="instagramShare">
+          <img src="https://cdn-icons-png.flaticon.com/512/1384/1384031.png">
+          <p>Instagram</p>
+        </a>
+        <a href="https://www.snapchat.com" target="_blank" id="snapchatShare">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQaTHhSVhfoSU_Y-m2cxpUmUqkYQ605zwhdaA&s">
+          <p>Snapchat</p>
+        </a>
+        <button class="copy-link-button" onclick="copyLink()">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/56/Chain_link_icon_slanted.png">
+          <p>Copy Link</p>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedProduct = "";
+    let bestDealURL = "";
+
+    $(document).ready(function () {
+      let category = window.location.pathname.split("/").pop();
+      $("#categoryHeader").text(`Products in Category: ${category}`);
+
+      $.getJSON(`/products/${category}`, function (data) {
+        if (data.products) {
+          data.products.forEach(function (product) {
+            $("#productDropdown").append(`<option value="${product}">${product}</option>`);
+          });
+        }
+      });
+
+      $(".copy-link-button").click(copyLink);
+    });
+
+    function copyLink() {
+      const url = window.location.href;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => alert("Link copied to clipboard!"));
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("Link copied to clipboard!");
+      }
+    }
+
+    function comparePrice() {
+      let category = window.location.pathname.split("/").pop();
+      selectedProduct = $("#productDropdown").val();
+
+      if (!selectedProduct) {
+        alert("Please select a product.");
+        return;
+      }
+
+      $.getJSON(`/compare/${category}/${selectedProduct}`, function (data) {
+        if (data.price_comparison.length > 0) {
+          let html = "";
+          let bestDeal = null;
+
+          data.price_comparison.forEach(function (item) {
+            let url = item.platform.toLowerCase() === "amazon"
+              ? `https://www.amazon.in/s?k=${encodeURIComponent(selectedProduct)}`
+              : `https://www.flipkart.com/search?q=${encodeURIComponent(selectedProduct)}`;
+
+            html += `<tr><td><b>${item.platform}</b></td><td>₹${item.price}</td><td><a href="${url}" target="_blank">View</a></td></tr>`;
+
+            if (!bestDeal || parseFloat(item.price.replace(/,/g, '')) < parseFloat(bestDeal.price.replace(/,/g, ''))) {
+              bestDeal = { platform: item.platform, price: item.price, url: url };
+            }
+          });
+
+          $("#priceDetails").html(html);
+          $("#priceTable").show();
+          bestDealURL = bestDeal.url;
+          $("#bestDeal").html(`<b>Best Deal:</b> <a href="${bestDealURL}" target="_blank">${bestDeal.platform} - ₹${bestDeal.price}</a>`).show();
+          $("#addToWishlistBtn").show();
+
+          $("#whatsappShare").attr("href", `https://api.whatsapp.com/send?text=${encodeURIComponent(`Best deal for ${selectedProduct}: ${bestDeal.platform} - ₹${bestDeal.price}. Link: ${bestDealURL}`)}`);
+        }
+      });
+    }
+
+    function addToWishlist() {
+      if (!selectedProduct || !bestDealURL) {
+        alert("Please compare a product first!");
+        return;
+      }
+
+      let category = window.location.pathname.split("/").pop();
+      let priceText = $("#priceDetails tr:first-child td:nth-child(2)").text().replace(/[^\d]/g, "");
+
+      fetch("/add_to_wishlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          category: category,
+          product_name: selectedProduct,
+          price: priceText,
+          url: bestDealURL
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+      })
+      .catch(error => {
+        console.error("Error adding to wishlist:", error);
+        alert("Failed to add product to wishlist.");
+      });
+    }
+  </script>
+</body>
+</html>
